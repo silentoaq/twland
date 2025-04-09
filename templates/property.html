@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>選擇房產</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container py-5">
+  <h2>房產清單</h2>
+  <p>身份確認成功：<strong>{{ name }}</strong>（{{ national_id }}）</p>
+
+  {% if properties %}
+    <ul class="list-group mt-4">
+      {% for p in properties %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ p.property_id }}</strong> - {{ p.address }}
+          </div>
+          <a href="/issue/{{ session_id }}?property_id={{ p.property_id }}" class="btn btn-sm btn-success">申請 VC</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="alert alert-warning mt-4">查無名下房產紀錄。</div>
+  {% endif %}
+</body>
+</html>

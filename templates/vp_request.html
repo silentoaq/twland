@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>請出示自然人憑證</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container py-5">
+  <h2>請出示自然人 VC</h2>
+  <p>請使用您的憑證皮夾掃描下方 QR code，或點擊連結以完成出示流程：</p>
+
+  <div class="text-center my-4">
+    <img src="{{ qr_path }}" class="img-fluid" style="max-width: 300px;">
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">VP Submission URL</label>
+    <input type="text" class="form-control" value="{{ vp_url }}" id="vpurl" readonly>
+  </div>
+  <button class="btn btn-primary" onclick="copy()">複製連結</button>
+
+  <script>
+    function copy() {
+      const input = document.getElementById("vpurl");
+      navigator.clipboard.writeText(input.value);
+      alert("連結已複製！");
+    }
+  </script>
+</body>
+</html>

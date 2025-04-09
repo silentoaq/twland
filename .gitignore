@@ -1,0 +1,12 @@
+.venv
+.well-known
+keys
+*.pem
+*.json
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+*.log
+*.png
