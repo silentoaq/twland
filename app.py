@@ -64,6 +64,16 @@ def vp_request(session_id):
                           vp_url=vp_request_uri,
                           qr_path=f"/static/qrcodes/{qr_filename}")
 
+# === 檢查驗證狀態 ===
+@app.route("/check-verification/<session_id>")
+def check_verification(session_id):
+    sessions = load_json(PATH["SESSIONS"])
+    session = sessions.get(session_id, {})
+    return jsonify({
+        "verified": session.get("verified", False),
+        "timestamp": datetime.utcnow().isoformat()
+    })
+
 # === OID4VP 請求端點：提供VP請求參數 ===
 @app.route("/oid4vp/request/<session_id>")
 def oid4vp_request(session_id):
@@ -155,6 +165,7 @@ def oid4vp_presentation(session_id):
     save_json(PATH["SESSIONS"], sessions)
     
     return response({"status": "success", "message": "憑證驗證成功"})
+
 # === OID4VP 回調端點 ===
 @app.route("/oid4vp/callback")
 def oid4vp_callback():

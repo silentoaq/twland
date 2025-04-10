@@ -13,6 +13,11 @@
     <!-- QR code -->
     <img src="{{ qr_path }}" alt="QR code" class="img-thumbnail mb-3" style="max-width: 220px;">
 
+    <!-- 狀態顯示區域 -->
+    <div id="status-container" class="mb-3">
+      <div id="polling-status" class="alert alert-info mt-2" style="display: none;"></div>
+    </div>
+
     <!-- 顯示 VP 連結 -->
     <div class="mb-3">
       <input type="text" class="form-control text-center" value="{{ vp_url }}" id="vpurl" readonly>
@@ -31,6 +36,7 @@
   </div>
 
   <script>
+    // 複製連結到剪貼簿
     function copyLink() {
       const input = document.getElementById("vpurl");
       input.select();
@@ -39,6 +45,56 @@
         alert("連結已複製到剪貼簿！");
       });
     }
+
+    // 獲取當前session_id，從URL路徑中提取
+    const pathSegments = window.location.pathname.split('/');
+    const sessionId = pathSegments[pathSegments.length - 1]; 
+    let pollingInterval;
+    let pollingTimeout;
+    
+    function startPolling() {
+      // 顯示初始狀態
+      document.getElementById("polling-status").textContent = "等待您使用錢包完成身分驗證...";
+      document.getElementById("polling-status").style.display = "block";
+      
+      // 啟動輪詢
+      pollingInterval = setInterval(checkVerificationStatus, 3000); // 每3秒檢查一次
+      
+      // 設置2分鐘後超時停止輪詢
+      pollingTimeout = setTimeout(() => {
+        clearInterval(pollingInterval);
+        document.getElementById("polling-status").innerHTML = "驗證等待超時，請<a href='javascript:window.location.reload()'>刷新頁面</a>重試或手動前往<a href='/verify/" + sessionId + "'>查看結果</a>";
+      }, 5*60*1000); // 2分鐘
+    }
+    
+    function checkVerificationStatus() {
+      fetch(`/check-verification/${sessionId}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.verified) {
+            // 清除輪詢和超時計時器
+            clearInterval(pollingInterval);
+            clearTimeout(pollingTimeout);
+            
+            // 顯示跳轉提示
+            document.getElementById("polling-status").className = "alert alert-success mt-2";
+            document.getElementById("polling-status").innerHTML = "驗證成功！正在跳轉到房產列表...";
+            
+            // 等待1.5秒後跳轉，讓用戶看到成功提示
+            setTimeout(() => {
+              window.location.href = `/property/${sessionId}`;
+            }, 1500);
+          }
+        })
+        .catch(error => {
+          console.error("檢查驗證狀態出錯:", error);
+          document.getElementById("polling-status").className = "alert alert-danger mt-2";
+          document.getElementById("polling-status").textContent = "檢查驗證狀態時發生錯誤，請刷新頁面重試";
+        });
+    }
+    
+    // 頁面載入後開始輪詢
+    document.addEventListener("DOMContentLoaded", startPolling);
   </script>
 </body>
 </html>

@@ -1,16 +1,17 @@
 import os
 import json
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 PATH = {
-    "SESSIONS": os.path.join(BASE_DIR, "..", "data", "sessions.json"),
-    "ISSUED": os.path.join(BASE_DIR, "..", "data", "issued.json"),
-    "OFFER": os.path.join(BASE_DIR, "..", "data", "offers.json"),
-    "REVOKED": os.path.join(BASE_DIR, "..", "data", "revoked.json"),
-    "QR_DIR": os.path.join(BASE_DIR, "..", "static", "qrcodes"),
-    "WELL_KNOWN": os.path.join(BASE_DIR, "..", ".well-known"),
-    "PROPERTY_DB": os.path.join(BASE_DIR, "..", "data", "properties.json")
+    "SESSIONS": os.path.join(BASE_DIR,  "data", "sessions.json"),
+    "ISSUED": os.path.join(BASE_DIR, "data", "issued.json"),
+    "OFFER": os.path.join(BASE_DIR, "data", "offers.json"),
+    "REVOKED": os.path.join(BASE_DIR, "data", "revoked.json"),
+    "QR_DIR": os.path.join(BASE_DIR, "static", "qrcodes"),
+    "WELL_KNOWN": os.path.join(BASE_DIR, ".well-known"),
+    "PRIVATE_KEY": os.path.join(BASE_DIR, "keys", "issuer_private_key.pem"),
+    "PROPERTY_DB": os.path.join(BASE_DIR, "data", "properties.json")
 }
 
 def load_json(path):
