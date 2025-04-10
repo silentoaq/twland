@@ -21,8 +21,13 @@
     <!-- 複製按鈕 -->
     <button class="btn btn-outline-primary" onclick="copyLink()">複製連結</button>
 
-    <hr>
-    <a href="/property/{{ session_id }}" class="btn btn-secondary mt-3">回上一頁</a>
+    <!-- 統一導航區 -->
+    <hr class="my-4">
+    <div class="d-flex justify-content-center gap-2">
+      <a href="/" class="btn btn-secondary">首頁</a>
+      <a href="/property/{{ session_id }}" class="btn btn-secondary">房產列表</a>
+      <a href="/issued" class="btn btn-secondary">已核發清單</a>
+    </div>
   </div>
 
   <script>

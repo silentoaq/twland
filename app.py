@@ -291,6 +291,7 @@ def issue(session_id):
     qrcode.make(offer_url).save(qr_path)
     
     return render_template("issued.html",
+                          session_id=session_id,
                           vc_id=offer_code,
                           offer_url=offer_url,
                           qr_path=f"/static/qrcodes/{qr_filename}")
