@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from utils.crypto import sign_sd_jwt
 from utils.verify import verify_sd_jwt
 from utils.path import PATH, load_json, save_json
+from utils.property_db import get_property_by_id, get_properties_for_holder
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -124,46 +125,67 @@ def oid4vp_presentation(session_id):
     session = sessions.get(session_id)
     
     if not session:
+        print(f"無效的session: {session_id}")
         return response(error="無效的session", code=404)
     
     # 獲取VP令牌和狀態
     req = request.get_json()
+    print(f"收到的請求: {req}")
     vp_token = req.get("vp_token")  # 使用 OID4VP 標準字段名
     state = req.get("state")
+    print(f"收到狀態: {state}, 預期狀態: {session.get('state')}")
     
     # 驗證狀態
     if state != session.get("state"):
+        print(f"狀態不匹配: 收到 {state}, 預期 {session.get('state')}")
         return response(error="狀態不匹配", code=400)
     
     # 驗證VP令牌
     if not vp_token:
+        print(f"缺少VP令牌")
         return response(error="缺少VP令牌", code=400)
     
     # 假設VP令牌是一個SD-JWT格式的憑證
+    print(f"開始驗證VP令牌...")
     valid, result = verify_sd_jwt(vp_token)  # 這裡傳入 vp_token
+    print(f"驗證結果: 有效={valid}, 結果={result}")
     if not valid:
+        print(f"憑證驗證失敗: {result}")
         return response(error=f"憑證驗證失敗: {result}", code=400)
     
     # 獲取憑證中的必要信息
     name = result.get("name")
-    national_id = result.get("national_id")
+    id_number = result.get("id_number")
+    birth_date = result.get("birth_date")
+    gender = result.get("gender")
     holder_did = result.get("holder_did")
+    print(f"提取的資訊: name={name}, id_number={id_number}, holder_did={holder_did}")
     
-    if not name or not national_id:
+    if not name or not id_number:
+        print(f"缺少必要的身分信息: name={name}, id_number={id_number}")
         return response(error="缺少必要的身分信息", code=400)
     
     # 更新session狀態
-    sessions[session_id].update({
-        "verified": True,
-        "vc_info": {
-            "name": name,
-            "national_id": national_id,
-            "holder_did": holder_did
-        },
-        "verification_time": datetime.utcnow().isoformat()
-    })
-    save_json(PATH["SESSIONS"], sessions)
+    try:
+        print(f"更新session: {session_id}")
+        sessions[session_id].update({
+            "verified": True,
+            "vc_info": {
+                "name": name,
+                "id_number": id_number,
+                "birth_date": birth_date,
+                "gender": gender,
+                "holder_did": holder_did
+            },
+            "verification_time": datetime.utcnow().isoformat()
+        })
+        save_json(PATH["SESSIONS"], sessions)
+        print(f"Session更新成功")
+    except Exception as e:
+        print(f"更新session時出錯: {str(e)}")
+        return response(error=f"更新session時出錯: {str(e)}", code=500)
     
+    print(f"驗證成功完成")
     return response({"status": "success", "message": "憑證驗證成功"})
 
 # === OID4VP 回調端點 ===
@@ -203,7 +225,9 @@ def verify_vc(session_id):
         "verified": True,
         "vc_info": {
             "name": result.get("name", ""),
-            "national_id": result.get("national_id", ""),
+            "id_number": result.get("id_number", ""),
+            "birth_date": result.get("birth_date", ""),
+            "gender": result.get("gender", ""),
             "holder_did": result.get("holder_did", "")
         }
     }
@@ -232,17 +256,16 @@ def property_list(session_id):
         return redirect(url_for("index"))
     
     name = session["vc_info"].get("name")
-    national_id = session["vc_info"].get("national_id")
+    id_number = session["vc_info"].get("id_number")
     
-    # 從模擬資料庫獲取房產清單
-    from utils.property_db import get_properties_for_holder
-    properties = get_properties_for_holder(name, national_id)
+    # 從資料庫獲取房產清單
+    properties = get_properties_for_holder(name, id_number)
     
     return render_template("property.html",
                           session_id=session_id,
                           properties=properties,
                           name=name,
-                          national_id=national_id)
+                          id_number=id_number)
 
 # === 產生房產憑證預授權碼 ===
 @app.route("/issue/<session_id>")
@@ -257,16 +280,14 @@ def issue(session_id):
         return response(error="尚未通過身分驗證", code=403)
     
     # 從資料庫獲取房產資訊
-    from utils.property_db import get_all_properties
-    all_properties = get_all_properties()
-    property_info = next((p for p in all_properties if p["property_id"] == property_id), None)
+    property_info = get_property_by_id(property_id)
     
     if not property_info:
         return response(error="找不到房產資料", code=404)
     
     # 檢查是否為屬於該使用者的房產
     if (property_info["owner_name"] != session["vc_info"]["name"] or 
-        property_info["owner_national_id"] != session["vc_info"]["national_id"]):
+        property_info["owner_id_number"] != session["vc_info"]["id_number"]):
         return response(error="無權申請此房產憑證", code=403)
     
     # 產生預授權碼
@@ -276,9 +297,19 @@ def issue(session_id):
     offers[offer_code] = {
         "user_claims": {
             "owner_name": property_info["owner_name"],
-            "owner_national_id": property_info["owner_national_id"],
+            "owner_id_number": property_info["owner_id_number"],
             "property_id": property_info["property_id"],
-            "address": property_info["address"]
+            "address": property_info["address"],
+            "land_number": property_info["land_number"],
+            "building_number": property_info["building_number"],
+            "rights_scope": property_info["rights_scope"],
+            "rights_portion": property_info["rights_portion"],
+            "certificate_number": property_info["certificate_number"],
+            "certificate_date": property_info["certificate_date"],
+            "land_area": property_info["area"]["land"],
+            "building_area": property_info["area"]["building"],
+            "use": property_info["use"],
+            "notes": property_info.get("notes", "")
         },
         "used": False
     }
@@ -333,13 +364,13 @@ def credential_endpoint():
     
     user_claims = offer.get("user_claims")
     if not user_claims:
-        return response(error="找不到使用者資料，無法發憑證", code=404)
+        return response(error="找不到房產資料，無法發憑證", code=404)
     
     # === 簽發 SD-JWT（預設全部欄位都使用 Selective Disclosure）===
     sd_jwt = sign_sd_jwt(user_claims, subject_did)
     
     # === 從 payload 抓出 VC ID ===
-    jwt_payload = jwt.decode(sd_jwt.split("~")[0], options={"verify_signature": False})
+    jwt_payload = jwt.decode(sd_jwt.split("~")[0], options={"verify_signature": False}, algorithms=["ES256"])
     vc_id = jwt_payload.get("vc", {}).get("id", "")
     
     # === 標記此預授權碼已使用 ===
@@ -352,6 +383,9 @@ def credential_endpoint():
         "vc": sd_jwt,
         "vc_id": vc_id,
         "property_id": user_claims.get("property_id", ""),
+        "owner_name": user_claims.get("owner_name", ""),
+        "certificate_number": user_claims.get("certificate_number", ""),
+        "address": user_claims.get("address", ""),
         "holder_did": subject_did,
         "issued_at": datetime.utcnow().isoformat()
     })

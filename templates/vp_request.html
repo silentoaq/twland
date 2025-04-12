@@ -1,99 +1,186 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8">
-  <title>產權憑證申請</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="p-4">
-  <div class="container text-center">
-    <h2 class="mb-4">請出示自然人 VC</h2>
-    <p>請使用支援 OID4VP 的憑證皮夾掃描下方 QR code，或使用連結以完成出示流程：</p>
+  <head>
+    <meta charset="UTF-8" />
+    <title>產權憑證申請</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .qr-container {
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin: 0 auto;
+        max-width: 300px;
+      }
+      .vp-link {
+        border: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        font-family: monospace;
+      }
+      .copy-button {
+        position: relative;
+      }
+      .page-header {
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+      }
+      #polling-status {
+        transition: all 0.3s;
+      }
+    </style>
+  </head>
+  <body class="p-4">
+    <div class="container">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <div class="d-flex align-items-center">
+            <h2 class="mb-0">房產產權憑證申請中心</h2>
+          </div>
+        </div>
+        <div class="card-body text-center">
+          <div class="page-header">
+            <h3 class="text-primary">請出示自然人 VC</h3>
+            <p class="text-muted">
+              需先透過自然人憑證驗證身分，才能查詢與申請房產憑證
+            </p>
+          </div>
 
-    <!-- 狀態顯示區域 -->
-    <div id="status-container" class="mb-3">
-      <div id="polling-status" class="alert alert-info mt-2" style="display: none;"></div>
+          <!-- 狀態顯示區域 -->
+          <div id="status-container" class="mb-3">
+            <div
+              id="polling-status"
+              class="alert alert-info mt-2"
+              style="display: none"
+            ></div>
+          </div>
+
+          <!-- QR code -->
+          <div class="qr-container mb-4">
+            <img
+              src="{{ qr_path }}"
+              alt="QR code"
+              class="img-fluid mb-3"
+              style="max-width: 220px"
+            />
+            <p class="text-muted mb-0">請使用支援 OID4VP 的憑證皮夾掃描</p>
+          </div>
+
+          <!-- 顯示 VP 連結 -->
+          <div class="mb-3">
+            <div class="input-group">
+              <input
+                type="text"
+                class="form-control vp-link text-center"
+                value="{{ vp_url }}"
+                id="vpurl"
+                readonly
+              />
+              <button
+                class="btn btn-outline-primary copy-button"
+                onclick="copyLink()"
+              >
+                <i class="bi bi-clipboard"></i> 複製連結
+              </button>
+            </div>
+            <small class="text-muted">或複製以上連結貼到憑證皮夾中開啟</small>
+          </div>
+
+          <!-- 使用說明 -->
+          <div class="alert alert-secondary mt-4">
+            <h5>使用說明</h5>
+            <ol class="text-start">
+              <li>使用憑證錢包掃描QR碼或開啟連結</li>
+              <li>選擇您的自然人憑證進行出示</li>
+              <li>系統驗證成功後將自動跳轉到房產列表</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- 統一導航區 -->
+        <div class="card-footer">
+          <div class="d-flex justify-content-center gap-2 mt-2">
+            <a href="/" class="btn btn-outline-secondary">重新開始</a>
+            <a href="/issued" class="btn btn-outline-secondary">已核發清單</a>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- QR code -->
-    <img src="{{ qr_path }}" alt="QR code" class="img-thumbnail mb-3" style="max-width: 220px;">
-
-    <!-- 顯示 VP 連結 -->
-    <div class="mb-3">
-      <input type="text" class="form-control text-center" value="{{ vp_url }}" id="vpurl" readonly>
-    </div>
-
-    <!-- 複製按鈕 -->
-    <button class="btn btn-outline-primary" onclick="copyLink()">複製連結</button>
-
-    <!-- 統一導航區 -->
-    <hr>
-    <div class="d-flex justify-content-center gap-2 mt-3">
-      <a href="/" class="btn btn-secondary">首頁</a>
-      <a href="/issued" class="btn btn-secondary">已核發清單</a>
-    </div>
-  </div>
-
-  <script>
-    // 複製連結到剪貼簿
-    function copyLink() {
-      const input = document.getElementById("vpurl");
-      input.select();
-      input.setSelectionRange(0, 99999); // For mobile
-      navigator.clipboard.writeText(input.value).then(() => {
-        alert("連結已複製到剪貼簿！");
-      });
-    }
-
-    // 獲取當前session_id，從URL路徑中提取
-    const pathSegments = window.location.pathname.split('/');
-    const sessionId = pathSegments[pathSegments.length - 1]; 
-    let pollingInterval;
-    let pollingTimeout;
-    
-    function startPolling() {
-      // 顯示初始狀態
-      document.getElementById("polling-status").textContent = "等待您使用錢包完成身分驗證...";
-      document.getElementById("polling-status").style.display = "block";
-      
-      // 啟動輪詢
-      pollingInterval = setInterval(checkVerificationStatus, 3000); // 每3秒檢查一次
-      
-      // 設置2分鐘後超時停止輪詢
-      pollingTimeout = setTimeout(() => {
-        clearInterval(pollingInterval);
-        document.getElementById("polling-status").innerHTML = "驗證等待超時，請<a href='javascript:window.location.reload()'>刷新頁面</a>重試或手動前往<a href='/verify/" + sessionId + "'>查看結果</a>";
-      }, 5*60*1000); // 2分鐘
-    }
-    
-    function checkVerificationStatus() {
-      fetch(`/check-verification/${sessionId}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.verified) {
-            // 清除輪詢和超時計時器
-            clearInterval(pollingInterval);
-            clearTimeout(pollingTimeout);
-            
-            // 顯示跳轉提示
-            document.getElementById("polling-status").className = "alert alert-success mt-2";
-            document.getElementById("polling-status").innerHTML = "驗證成功！正在跳轉到房產列表...";
-            
-            // 等待1.5秒後跳轉，讓用戶看到成功提示
-            setTimeout(() => {
-              window.location.href = `/property/${sessionId}`;
-            }, 1500);
-          }
-        })
-        .catch(error => {
-          console.error("檢查驗證狀態出錯:", error);
-          document.getElementById("polling-status").className = "alert alert-danger mt-2";
-          document.getElementById("polling-status").textContent = "檢查驗證狀態時發生錯誤，請刷新頁面重試";
+    <script>
+      // 複製連結到剪貼簿
+      function copyLink() {
+        const input = document.getElementById("vpurl");
+        input.select();
+        input.setSelectionRange(0, 99999); // For mobile
+        navigator.clipboard.writeText(input.value).then(() => {
+          alert("連結已複製到剪貼簿！");
         });
-    }
-    
-    // 頁面載入後開始輪詢
-    document.addEventListener("DOMContentLoaded", startPolling);
-  </script>
-</body>
+      }
+
+      // 獲取當前session_id，從URL路徑中提取
+      const pathSegments = window.location.pathname.split("/");
+      const sessionId = pathSegments[pathSegments.length - 1];
+      let pollingInterval;
+      let pollingTimeout;
+
+      function startPolling() {
+        // 顯示初始狀態
+        document.getElementById("polling-status").textContent =
+          "等待您使用錢包完成身分驗證...";
+        document.getElementById("polling-status").style.display = "block";
+
+        // 啟動輪詢
+        pollingInterval = setInterval(checkVerificationStatus, 3000); // 每3秒檢查一次
+
+        // 設置5分鐘後超時停止輪詢
+        pollingTimeout = setTimeout(() => {
+          clearInterval(pollingInterval);
+          document.getElementById("polling-status").innerHTML =
+            "驗證等待超時，請<a href='javascript:window.location.reload()'>刷新頁面</a>重試或手動前往<a href='/verify/" +
+            sessionId +
+            "'>查看結果</a>";
+          document.getElementById("polling-status").className =
+            "alert alert-warning mt-2";
+        }, 5 * 60 * 1000); // 5分鐘
+      }
+
+      function checkVerificationStatus() {
+        fetch(`/check-verification/${sessionId}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.verified) {
+              // 清除輪詢和超時計時器
+              clearInterval(pollingInterval);
+              clearTimeout(pollingTimeout);
+
+              // 顯示跳轉提示
+              document.getElementById("polling-status").className =
+                "alert alert-success mt-2";
+              document.getElementById("polling-status").innerHTML =
+                "驗證成功！正在跳轉到房產列表...";
+
+              // 等待1.5秒後跳轉，讓用戶看到成功提示
+              setTimeout(() => {
+                window.location.href = `/property/${sessionId}`;
+              }, 1500);
+            }
+          })
+          .catch((error) => {
+            console.error("檢查驗證狀態出錯:", error);
+            document.getElementById("polling-status").className =
+              "alert alert-danger mt-2";
+            document.getElementById("polling-status").textContent =
+              "檢查驗證狀態時發生錯誤，請刷新頁面重試";
+          });
+      }
+
+      // 頁面載入後開始輪詢
+      document.addEventListener("DOMContentLoaded", startPolling);
+    </script>
+  </body>
 </html>

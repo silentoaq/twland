@@ -52,11 +52,15 @@ def sign_sd_jwt(claims: dict, holder_did: str, disclose_keys: list = None) -> st
         "exp": int((now + timedelta(days=365)).timestamp()),
         "vc": {
             "@context": ["https://www.w3.org/2018/credentials/v1"],
-            "id": vc_uri,
+            "id": vc_uri, 
             "type": ["VerifiableCredential", "PropertyCredential"],
             "issuer": ISSUER_DID,
             "issuanceDate": now.isoformat() + "Z",
-            "credentialSubject": credential_subject
+            "credentialSubject": credential_subject,
+            "credentialStatus": {
+                "id": f"https://twland.ddns.net/.well-known/revocation-list.json",
+                "type": "RevocationList2021Status"
+            }
         },
         "_sd_alg": "sha-256"
     }

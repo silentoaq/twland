@@ -179,7 +179,8 @@ def verify_sd_jwt(sd_jwt: str):
         
         # 2. 解析 JWT header 和 payload (不驗證簽名)
         header = jwt.get_unverified_header(jwt_part)
-        payload = jwt.decode(jwt_part, options={"verify_signature": False})
+        # 修正這一行，添加algorithms參數
+        payload = jwt.decode(jwt_part, options={"verify_signature": False}, algorithms=["ES256"])
         
         print(f"JWT Header: {header}")
         print(f"發行者: {payload.get('iss')}")
@@ -196,7 +197,7 @@ def verify_sd_jwt(sd_jwt: str):
         # 4. 加載發行者公鑰並驗證簽名
         try:
             pubkey = load_issuer_public_key(issuer_did)
-            # 僅驗證 JWT 部分，不包括 disclosures
+            # 僅驗證 JWT 部分，不包括 disclosures，注意添加algorithms參數
             jwt.decode(jwt_part, key=pubkey, algorithms=["ES256"])
             print("JWT 簽名驗證成功")
         except Exception as e:
