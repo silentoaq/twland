@@ -1,122 +1,304 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-  <head>
-    <meta charset="UTF-8" />
-    <title>選擇房產</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <style>
-      .property-card {
-        transition: transform 0.2s ease;
-        margin-bottom: 1rem;
-      }
-      .property-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-      }
-      .certificate-number {
-        font-family: monospace;
-        background-color: #f8f9fa;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-      }
-    </style>
-  </head>
-  <body class="p-4">
-    <div class="container">
-      <div class="card shadow mb-4">
-        <div class="card-header bg-primary text-white">
-          <h2 class="mb-0">房產清單</h2>
-        </div>
-        <div class="card-body">
-          <div class="alert alert-success">
-            <h5>身份確認成功</h5>
-            <p class="mb-0">
-              姓名：<strong>{{ name }}</strong>（{{ id_number }}）
-            </p>
-          </div>
+<head>
+  <title>選擇房產</title>
+  <!-- Include shared styles -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --primary-color: #00796B;  /* Different primary color for TwLand */
+      --secondary-color: #26A69A;
+      --success-color: #43A047;
+      --warning-color: #FFA000;
+      --danger-color: #E53935;
+      --light-bg: #E0F2F1;
+      --dark-text: #263238;
+      --light-text: #FFFFFF;
+      --border-radius: 10px;
+      --box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
 
-          {% if properties %}
-          <div class="row mt-4">
-            {% for p in properties %}
-            <div class="col-md-6">
-              <div class="card property-card border-primary">
-                <div
-                  class="card-header d-flex justify-content-between align-items-center"
-                >
-                  <span><strong>{{ p.property_id }}</strong></span>
-                  <a
-                    href="/issue/{{ session_id }}?property_id={{ p.property_id }}"
-                    class="btn btn-success btn-sm"
-                    >申請 VC</a
-                  >
-                </div>
-                <div class="card-body">
-                  <table class="table table-sm table-borderless mb-0">
-                    <tr>
-                      <th class="text-muted" width="35%">所有權人</th>
-                      <td>{{ p.owner_name }}</td>
-                    </tr>
-                    <tr>
-                      <th class="text-muted">土地標示</th>
-                      <td>{{ p.land_number }}</td>
-                    </tr>
-                    <tr>
-                      <th class="text-muted">建物標示</th>
-                      <td>{{ p.building_number }}</td>
-                    </tr>
-                    <tr>
-                      <th class="text-muted">權利範圍</th>
-                      <td>{{ p.rights_portion }}</td>
-                    </tr>
-                    <tr>
-                      <th class="text-muted">權狀字號</th>
-                      <td>
-                        <span class="certificate-number"
-                          >{{ p.certificate_number }}</span
-                        >
-                      </td>
-                    </tr>
-                    <tr>
-                      <th class="text-muted">坐落地址</th>
-                      <td>{{ p.address }}</td>
-                    </tr>
-                    <tr>
-                      <th class="text-muted">面積</th>
-                      <td>
-                        土地：{{ p.area.land }}，建物：{{ p.area.building }}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th class="text-muted">用途</th>
-                      <td>{{ p.use }}</td>
-                    </tr>
-                  </table>
-                </div>
-                <div class="card-footer bg-light">
-                  <small class="text-muted"
-                    >權狀核發日期：{{ p.certificate_date }}</small
-                  >
-                </div>
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f0f2f5;
+      color: var(--dark-text);
+      line-height: 1.6;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* Container with responsive padding */
+    .app-container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 15px;
+    }
+
+    /* Main content card */
+    .content-card {
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      overflow: hidden;
+      border: none;
+      margin-bottom: 30px;
+    }
+
+    /* Card header styles */
+    .content-card .card-header {
+      background-color: var(--primary-color);
+      color: var(--light-text);
+      border-bottom: none;
+      padding: 20px 25px;
+      font-weight: 600;
+    }
+
+    .content-card .card-body {
+      padding: 25px;
+    }
+
+    .content-card .card-footer {
+      background-color: rgba(0,0,0,0.02);
+      padding: 15px 25px;
+      border-top: 1px solid rgba(0,0,0,0.05);
+    }
+
+    /* Button styles */
+    .btn {
+      border-radius: 6px;
+      font-weight: 500;
+      padding: 8px 16px;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--secondary-color);
+      border-color: var(--secondary-color);
+    }
+    
+    .btn-success {
+      background-color: var(--success-color);
+      border-color: var(--success-color);
+    }
+    
+    /* Alert styles */
+    .alert {
+      border-radius: 8px;
+      border-left: 4px solid;
+      padding: 15px 20px;
+      margin-bottom: 25px;
+    }
+    
+    .alert-success {
+      background-color: rgba(67, 160, 71, 0.1);
+      border-left-color: var(--success-color);
+    }
+    
+    .alert-warning {
+      background-color: rgba(255, 160, 0, 0.1);
+      border-left-color: var(--warning-color);
+    }
+    
+    /* Property card styles */
+    .property-card {
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+      border: none;
+      border-top: 4px solid var(--primary-color);
+    }
+    
+    .property-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    .property-card .card-header {
+      background-color: #f8f9fa;
+      color: var(--dark-text);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      padding: 15px 20px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .property-card .card-body {
+      padding: 20px;
+    }
+    
+    .property-card .card-footer {
+      background-color: #f8f9fa;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      padding: 10px 20px;
+      color: #6c757d;
+    }
+    
+    /* Property details table */
+    .property-table {
+      width: 100%;
+    }
+    
+    .property-table th {
+      color: #6c757d;
+      font-weight: 500;
+      width: 35%;
+      padding: 8px 5px;
+      vertical-align: top;
+    }
+    
+    .property-table td {
+      padding: 8px 5px;
+    }
+    
+    /* Certificate number display */
+    .certificate-number {
+      display: inline-block;
+      font-family: monospace;
+      background-color: #f1f3f5;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    
+    /* Navigation menu */
+    .nav-menu {
+      display: flex;
+      gap: 10px;
+    }
+    
+    @media (max-width: 576px) {
+      .nav-menu {
+        flex-direction: column;
+        width: 100%;
+      }
+      
+      .nav-menu .btn {
+        width: 100%;
+        margin-bottom: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="content-card card">
+      <div class="card-header d-flex align-items-center">
+        <i class="bi bi-buildings me-2" style="font-size: 1.4rem;"></i>
+        <h3 class="mb-0">房產清單</h3>
+      </div>
+      
+      <div class="card-body">
+        <div class="alert alert-success">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-person-check-fill me-3" style="font-size: 1.5rem;"></i>
+            <div>
+              <h5 class="mb-1">身份確認成功</h5>
+              <p class="mb-0">
+                姓名：<strong>{{ name }}</strong>（{{ id_number }}）
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {% if properties %}
+        <div class="row">
+          {% for p in properties %}
+          <div class="col-lg-6">
+            <div class="property-card card">
+              <div class="card-header">
+                <span>
+                  <i class="bi bi-house-door me-2"></i>
+                  <strong>{{ p.property_id }}</strong>
+                </span>
+                <a href="/issue/{{ session_id }}?property_id={{ p.property_id }}" class="btn btn-success btn-sm">
+                  <i class="bi bi-plus-circle me-1"></i> 申請 VC
+                </a>
+              </div>
+              <div class="card-body">
+                <table class="property-table">
+                  <tr>
+                    <th>所有權人</th>
+                    <td>{{ p.owner_name }}</td>
+                  </tr>
+                  <tr>
+                    <th>土地標示</th>
+                    <td>{{ p.land_number }}</td>
+                  </tr>
+                  <tr>
+                    <th>建物標示</th>
+                    <td>{{ p.building_number }}</td>
+                  </tr>
+                  <tr>
+                    <th>權利範圍</th>
+                    <td>{{ p.rights_portion }}</td>
+                  </tr>
+                  <tr>
+                    <th>權狀字號</th>
+                    <td>
+                      <span class="certificate-number">{{ p.certificate_number }}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>坐落地址</th>
+                    <td>{{ p.address }}</td>
+                  </tr>
+                  <tr>
+                    <th>面積</th>
+                    <td>
+                      <div class="d-flex gap-2">
+                        <span class="badge bg-light text-dark">土地：{{ p.area.land }}</span>
+                        <span class="badge bg-light text-dark">建物：{{ p.area.building }}</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>用途</th>
+                    <td>{{ p.use }}</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="card-footer">
+                <small>
+                  <i class="bi bi-calendar-date me-1"></i>
+                  權狀核發日期：{{ p.certificate_date }}
+                </small>
               </div>
             </div>
-            {% endfor %}
           </div>
-          {% else %}
-          <div class="alert alert-warning mt-4">查無名下房產紀錄。</div>
-          {% endif %}
+          {% endfor %}
         </div>
+        {% else %}
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          查無名下房產紀錄。
+        </div>
+        {% endif %}
+      </div>
 
-        <!-- 統一導航區 -->
-        <div class="card-footer">
-          <div class="d-flex gap-2">
-            <a href="/" class="btn btn-secondary">首頁</a>
-            <a href="/issued" class="btn btn-secondary">已核發清單</a>
-          </div>
+      <!-- 統一導航區 -->
+      <div class="card-footer">
+        <div class="nav-menu">
+          <a href="/" class="btn btn-secondary">
+            <i class="bi bi-house me-1"></i> 首頁
+          </a>
+          <a href="/issued" class="btn btn-secondary">
+            <i class="bi bi-card-checklist me-1"></i> 已核發清單
+          </a>
         </div>
       </div>
     </div>
-  </body>
+  </div>
+</body>
 </html>
