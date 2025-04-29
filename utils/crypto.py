@@ -49,7 +49,7 @@ def sign_sd_jwt(claims: dict, holder_did: str, disclose_keys: list = None) -> st
         "iss": ISSUER_DID,
         "sub": holder_did,
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(days=365)).timestamp()),
+        "exp": int((now + timedelta(days=3650)).timestamp()),
         "vc": {
             "@context": ["https://www.w3.org/2018/credentials/v1"],
             "id": vc_uri, 
