@@ -15,8 +15,8 @@ def load_private_key():
         return serialization.load_pem_private_key(f.read(), password=None)
 
 def encode_disclosure(salt, key, value):
-    disclosure_obj = {"salt": salt, "key": key, "value": value}
-    disclosure_json = json.dumps(disclosure_obj, separators=(",", ":"))
+    disclosure_array = [salt, key, value]
+    disclosure_json = json.dumps(disclosure_array, separators=(",", ":"))
     disclosure_b64 = base64.urlsafe_b64encode(disclosure_json.encode()).decode().rstrip("=")
     disclosure_hash = hashlib.sha256(disclosure_json.encode()).digest()
     disclosure_hash_b64 = base64.urlsafe_b64encode(disclosure_hash).decode().rstrip("=")

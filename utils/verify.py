@@ -35,20 +35,28 @@ def save_did_cache(cache):
         print(f"保存 DID 緩存失敗: {str(e)}")
 
 def decode_disclosure(disclosure_b64):
-    """解碼單個 disclosure 值"""
     try:
-        # 補全 Base64URL 的 padding
         padded = disclosure_b64 + '=' * (-len(disclosure_b64) % 4)
         decoded = base64.urlsafe_b64decode(padded.encode())
-        return json.loads(decoded)
+        disclosure_array = json.loads(decoded)
+        
+        if not isinstance(disclosure_array, list) or len(disclosure_array) != 3:
+            print(f"Disclosure 格式不正確: {disclosure_array}")
+            return None
+            
+        salt, key, value = disclosure_array
+        return {"salt": salt, "key": key, "value": value}
     except Exception as e:
-        print(f"解碼 disclosure 失敗: {disclosure_b64[:20]}...")
-        print(f"錯誤: {str(e)}")
+        print(f"解碼 disclosure 失敗: {str(e)}")
         return None
 
 def compute_hash(disclosure_obj):
-    """計算披露對象的哈希值"""
-    disclosure_json = json.dumps(disclosure_obj, separators=(",", ":")).encode()
+    disclosure_array = [
+        disclosure_obj["salt"], 
+        disclosure_obj["key"], 
+        disclosure_obj["value"]
+    ]
+    disclosure_json = json.dumps(disclosure_array, separators=(",", ":")).encode()
     digest = hashlib.sha256(disclosure_json).digest()
     return "sha-256:" + base64.urlsafe_b64encode(digest).decode().rstrip("=")
 
